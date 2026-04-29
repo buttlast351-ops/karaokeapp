@@ -1,0 +1,227 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Karaoke queue API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: search
+    description: YouTube karaoke search
+  - name: queue
+    description: Karaoke request queue
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /search:
+    get:
+      operationId: searchKaraoke
+      tags: [search]
+      summary: Search YouTube for karaoke videos
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
+  /queue:
+    get:
+      operationId: getQueue
+      tags: [queue]
+      summary: Get the current karaoke queue
+      responses:
+        "200":
+          description: Current queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueueItem"
+    post:
+      operationId: addToQueue
+      tags: [queue]
+      summary: Add a song to the queue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddQueueRequest"
+      responses:
+        "200":
+          description: Added song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueItem"
+  /queue/{id}:
+    delete:
+      operationId: removeFromQueue
+      tags: [queue]
+      summary: Remove a song from the queue
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /queue/{id}/played:
+    post:
+      operationId: markPlayed
+      tags: [queue]
+      summary: Mark a song as played (advance the queue)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Marked played
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /stats:
+    get:
+      operationId: getStats
+      tags: [queue]
+      summary: Queue stats summary
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStats"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+    SearchResult:
+      type: object
+      properties:
+        videoId:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        durationSeconds:
+          type: integer
+        durationLabel:
+          type: string
+        thumbnail:
+          type: string
+        url:
+          type: string
+      required: [videoId, title, author, durationSeconds, durationLabel, thumbnail, url]
+    AddQueueRequest:
+      type: object
+      properties:
+        videoId:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        durationSeconds:
+          type: integer
+        durationLabel:
+          type: string
+        thumbnail:
+          type: string
+        singer:
+          type: string
+          description: Name of the person who will sing
+      required: [videoId, title, author, durationSeconds, durationLabel, thumbnail, singer]
+    QueueItem:
+      type: object
+      properties:
+        id:
+          type: string
+        videoId:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        durationSeconds:
+          type: integer
+        durationLabel:
+          type: string
+        thumbnail:
+          type: string
+        singer:
+          type: string
+        addedAt:
+          type: string
+          format: date-time
+      required: [id, videoId, title, author, durationSeconds, durationLabel, thumbnail, singer, addedAt]
+    QueueStats:
+      type: object
+      properties:
+        totalInQueue:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        totalDurationLabel:
+          type: string
+        totalPlayed:
+          type: integer
+        topSingers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SingerCount"
+      required: [totalInQueue, totalDurationSeconds, totalDurationLabel, totalPlayed, topSingers]
+    SingerCount:
+      type: object
+      properties:
+        singer:
+          type: string
+        count:
+          type: integer
+      required: [singer, count]
